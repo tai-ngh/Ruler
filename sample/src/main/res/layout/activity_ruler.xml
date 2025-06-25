@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/tv_radio_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="112dp"
+        android:textAppearance="@style/RadioValueText"
+        tools:text="105"/>
+
+    <com.ts.radiocherryapp.AlphaGradientLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <ke.tang.ruler.RulerView
+            android:id="@+id/radio_ruler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/RadioRulerView"/>
+    </com.ts.radiocherryapp.AlphaGradientLayout>
+
+</LinearLayout>

@@ -12,4 +12,24 @@
     <style name="Widget.AppCompat.RulerView" parent="Widget.RulerView">
     </style>
 
+    <style name="RadioRulerView" >
+        <item name="indicator">@drawable/ruler_radio_line_indicator</item>
+        <item name="android:textSize">18.67sp</item>
+        <item name="android:textColor">@color/ruler_scale_color</item>
+        <item name="scaleSize">1.33dp</item>
+        <item name="scaleColor">@color/ruler_scale_color</item>
+        <item name="stepWidth">13.34dp</item>
+        <item name="scaleMaxHeight">106.67dp</item>
+        <item name="scaleMinHeight">80dp</item>
+        <item name="rulerSize">2dp</item>
+        <item name="rulerColor">@color/ruler_scale_color</item>
+        <!--        <item name="rulerValueFormatter">@null</item>-->
+    </style>
+
+    <style name="RadioValueText" parent="TextAppearance.AppCompat.Large">
+        <item name="android:textColor">@color/black</item>
+        <item name="android:textSize">80sp</item>
+    </style>
+
+
 </resources>

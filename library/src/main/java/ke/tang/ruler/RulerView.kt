@@ -15,6 +15,7 @@ import android.view.ViewConfiguration
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.IntRange
+import androidx.core.graphics.toColorInt
 import androidx.core.math.MathUtils
 import java.util.*
 import kotlin.Comparator
@@ -130,6 +131,24 @@ class RulerView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
             invalidate()
         }
 
+    var textTopPadding: Int = 0
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    var bottomLineHeight: Int = 1
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    var bottomLinePadding: Int = 0
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     var onRulerValueChangeListener: OnRulerValueChangeListener? = null
 
     private val scroller by lazy {
@@ -198,8 +217,10 @@ class RulerView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         var targetHeight = rulerSize //横线高度
         targetHeight += max(scaleMaxHeight, scaleMinHeight) //刻度高度
-        targetHeight += (fontMetrics.bottom - fontMetrics.top).toInt() //刻度文本高度
-        targetHeight = max(indicator?.intrinsicHeight ?: 0, targetHeight) //选中指示器高度
+        // added
+        targetHeight = max(indicator?.intrinsicHeight ?: 0, targetHeight)
+        targetHeight += (fontMetrics.bottom - fontMetrics.top + textTopPadding).toInt() //刻度文本高度
+//        targetHeight = max(indicator?.intrinsicHeight ?: 0, targetHeight) //选中指示器高度
         targetHeight += paddingTop + paddingBottom //上下padding
 
         markerHeight = markers.maxOfOrNull { tempRect.apply { it.getBounds(this) }.height() }
@@ -271,8 +292,14 @@ class RulerView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
         canvas.clipRect(paddingLeft, paddingTop, width - paddingRight, height - paddingBottom)
 
         labelPaint.color = textColor?.getColorForState(drawableState, Color.BLACK) ?: Color.BLACK
-        val fontY = rulerBottom - rulerSize - scaleMaxHeight - fontMetrics.bottom
+//        val fontY = rulerBottom - rulerSize - scaleMaxHeight - fontMetrics.bottom
         val count = contentOffset / stepWidth
+
+        // added
+        val indicatorHeight = indicator?.intrinsicHeight ?: 0
+        val scaleCenterPivot = max(indicatorHeight, scaleMaxHeight)/2.0f
+        val fontY = indicatorHeight + textTopPadding.toFloat()
+
         for (index in min(count, maxScaleCount) downTo minScaleCount) {
             val scalePosition: Int = index * stepWidth
             val centerX: Float = paddingLeft + halfInsetWidth + scalePosition - contentOffset.toFloat()
@@ -280,12 +307,27 @@ class RulerView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
             val right = centerX + scaleSize / 2
             val label = rulerValueFormatter?.formatValue(index) ?: index.toString()
             val labelRight = centerX + labelPaint.measureText(label) / 2
+
             if (labelRight > 0) {
-                if (0 == index % sectionScaleCount || index == maxScaleCount || index == minScaleCount) {
-                    canvas.drawRect(left, rulerTop - scaleMaxHeight.toFloat(), right, rulerTop.toFloat(), rulerPaint)
+                val isLongScale = rulerValueFormatter?.isLongScale(index) ?: run {
+                    0 == index % sectionScaleCount || index == maxScaleCount || index == minScaleCount
+                }
+                if (isLongScale) {
+//                    canvas.drawRect(left, rulerTop - scaleMaxHeight.toFloat(), right, rulerTop.toFloat(), rulerPaint)
+                    canvas.drawRect(left,
+                        scaleCenterPivot - scaleMaxHeight/2.0f,
+                        right,
+                        scaleCenterPivot + scaleMaxHeight/2.0f ,
+                        rulerPaint
+                    )
                     canvas.drawText(label, centerX, fontY, labelPaint)
                 } else {
-                    canvas.drawRect(left, rulerTop - scaleMinHeight.toFloat(), right, rulerTop.toFloat(), rulerPaint)
+//                    canvas.drawRect(left, rulerTop - scaleMinHeight.toFloat(), right, rulerTop.toFloat(), rulerPaint)
+                    canvas.drawRect(left,
+                        scaleCenterPivot - scaleMinHeight/2.0f,
+                        right,
+                        scaleCenterPivot + scaleMinHeight/2.0f,
+                        rulerPaint)
                 }
             } else {
                 break
@@ -299,12 +341,29 @@ class RulerView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
             val right = centerX + scaleSize / 2
             val label = rulerValueFormatter?.formatValue(index) ?: index.toString()
             val labelLeft = centerX - labelPaint.measureText(label) / 2
+
             if (labelLeft < width) {
-                if (0 == index % sectionScaleCount || index == maxScaleCount || index == minScaleCount) {
-                    canvas.drawRect(left, rulerBottom - rulerSize - scaleMaxHeight.toFloat(), right, rulerTop.toFloat(), rulerPaint)
+                val isLongScale = rulerValueFormatter?.isLongScale(index) ?: run {
+                    0 == index % sectionScaleCount || index == maxScaleCount || index == minScaleCount
+                }
+                if (isLongScale) {
+                    // draw long scale
+//                    canvas.drawRect(left, rulerBottom - rulerSize - scaleMaxHeight.toFloat() , right, rulerTop.toFloat(), rulerPaint)
+                    canvas.drawRect(left,
+                         scaleCenterPivot - scaleMaxHeight/2.0f,
+                        right,
+                        scaleCenterPivot + scaleMaxHeight/2.0f ,
+                        rulerPaint
+                    )
                     canvas.drawText(label, centerX, fontY, labelPaint)
                 } else {
-                    canvas.drawRect(left, rulerBottom - rulerSize - scaleMinHeight.toFloat(), right, rulerTop.toFloat(), rulerPaint)
+                    // draw normal scale
+//                    canvas.drawRect(left, rulerBottom - rulerSize - scaleMinHeight.toFloat(), right, rulerTop.toFloat(), rulerPaint)
+                    canvas.drawRect(left,
+                        scaleCenterPivot - scaleMinHeight/2.0f,
+                        right,
+                        scaleCenterPivot + scaleMinHeight/2.0f,
+                        rulerPaint)
                 }
             } else {
                 break
@@ -313,8 +372,17 @@ class RulerView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
 
 
         //绘制底部横线
+        //Draw the bottom horizontal line
         rulerPaint.color = rulerColor?.getColorForState(drawableState, Color.BLACK) ?: Color.BLACK
-        canvas.drawRect(max(0, paddingLeft + halfInsetWidth - contentOffset + contentOffsetRange.first).toFloat(), rulerTop.toFloat(), min(width, width - paddingRight - halfInsetWidth + contentOffsetRange.last - contentOffset).toFloat(), rulerBottom.toFloat(), rulerPaint)
+//        val bottomLineY = rulerTop.toFloat()
+        val bottomLineY = indicatorHeight.toFloat() + bottomLinePadding
+        canvas.drawRect(
+            max(0, paddingLeft + halfInsetWidth - contentOffset + contentOffsetRange.first).toFloat(),
+            bottomLineY,
+            min(width, width - paddingRight - halfInsetWidth + contentOffsetRange.last - contentOffset).toFloat(),
+            bottomLineY + rulerSize,
+            rulerPaint
+        )
 
         //绘制Marker
         markers.forEach {
@@ -339,7 +407,8 @@ class RulerView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
         //绘制指示器
         indicator?.apply {
             state = drawableState
-            setBounds(paddingLeft + halfInsetWidth - intrinsicWidth / 2, paddingTop, paddingLeft + halfInsetWidth + intrinsicWidth / 2, rulerBottom)
+//            setBounds(paddingLeft + halfInsetWidth - intrinsicWidth / 2, paddingTop, paddingLeft + halfInsetWidth + intrinsicWidth / 2, rulerBottom)
+            setBounds(paddingLeft + halfInsetWidth - intrinsicWidth / 2, paddingTop, paddingLeft + halfInsetWidth + intrinsicWidth / 2, intrinsicHeight)
             draw(canvas)
         }
 
@@ -432,6 +501,7 @@ class RulerView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
                         when {
                             contentOffset !in contentOffsetRange -> {
                                 state = STATE_RESET
+                                // scroll the ruler back to the bound when it goes beyond the lowest and maximum range
                                 scroller.springBack(contentOffset, 0, contentOffsetRange.first, contentOffsetRange.last, 0, 0)
                             }
                             abs(velocityX) > flingVelocity.first -> {
@@ -449,6 +519,7 @@ class RulerView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
                             }
                             else -> {
                                 state = STATE_RESET
+                                // help stick the ruler to each scale line
                                 scrollToRoundedValue()
                             }
                         }

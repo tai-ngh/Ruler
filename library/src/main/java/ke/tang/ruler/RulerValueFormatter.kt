@@ -9,4 +9,8 @@ interface RulerValueFormatter {
      * 返回当前值对应的文本
      */
     fun formatValue(@IntRange(from = 0, to = RulerView.MAX_VALUE.toLong()) value: Int): String
+
+    fun isLongScale(index: Int): Boolean
+
+    fun getRulerValue(index: Int): Int
 }
